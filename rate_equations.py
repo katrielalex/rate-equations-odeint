@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+
+"""rate_equations.py: Solves a particular chemical rate equation ODE."""
+
+__author__      = "Max Shepherd"
+__copyright__   = "Max Shepherd, 2009"
+
 import matplotlib
 matplotlib.use('TkAgg')
 
