@@ -26,11 +26,13 @@ import warnings
 X = 0.5
 
 # Take statespace as: (B,C,D,E,F,G)
+varz = 'BCDEFG'
 initial_conditions = (0.1, 0, 0, 1, 1.5, 0)
+initial_conditions = [c * 100 for c in initial_conditions]
 
 # Time points to solve for concentrations
 t_0 = 0
-t_max = 100
+t_max = 480
 dt = 0.1
 
 
@@ -48,8 +50,8 @@ def concentrations(rates):
 
     r = scipy.integrate.ode(d_by_dt)
     # vode, method={adams (non-stiff), bdf (stiff)}; lsoda
-    # r.set_integrator('vode', method='adams')  # bdf if stiff, also try lsoda integrator
-    r.set_integrator('lsoda')
+    r.set_integrator('vode', method='adams')  # bdf if stiff, also try lsoda integrator
+    # r.set_integrator('lsoda')
     r.set_initial_value(initial_conditions, 0)  # y0, t0
     r.set_f_params(*rates)
 
@@ -76,28 +78,36 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description="Do some rate equation computations")
     parser.add_argument("--rates", help="comma-separated coefficients for b, c, d")
+    parser.add_argument("--datafile", help="datafile to load", default="data.csv")
     args = parser.parse_args()
 
-    logging.info("Using fake experimental data")
-    real_data = concentrations((0.64166667, 0.01, 0.24666667))
+    logging.info("Using experimental data from %s", args.datafile)
+    real_data = pd.DataFrame.from_csv(args.datafile)
+    data_indices = [varz.index(c) for c in real_data.columns]
+    
+    def score(rates):
+        approximated = concentrations(rates)
+        stride = len(approximated) / len(real_data)
+        subsampled = approximated[0:-1:stride][:, data_indices]
+        return np.linalg.norm(real_data - subsampled)
 
     logging.info("Minimising L2 distance between approximated values and real data")
-    initial_rates = tuple(float(rate) for rate in args.rates.split(",")) if args.rates else (0.5, 0.3, 0.2)
-    score = lambda rates: np.linalg.norm(concentrations(rates) - real_data)
-    score = lambda rates: 6000 - np.count_nonzero(concentrations(rates))
+    initial_rates = tuple(float(rate) for rate in args.rates.split(",")) if args.rates else (0.1, 0.2, 0.3)
     result = scipy.optimize.minimize(score, initial_rates, method='Nelder-Mead', options=dict(disp=True))
 
     logging.info("Plotting")
-    # rates = result.x
-    # solution = pd.DataFrame(concentrations(rates), columns=list('BCDEFG'))
-    # solution.plot()
-    # plt.show()
+    rates = result.x
+    solution = pd.DataFrame(concentrations(rates), columns=list('BCDEFG'))
+    solution = solution[0:-1:len(solution) / len(real_data)][real_data.columns]
+    solution.set_index(real_data.index, inplace=True)
+    both = solution.join(real_data, lsuffix="_solved", rsuffix="_exp")
+    print both
+    both.plot()
+    plt.show()
 
     logging.info("Done")
-    import ipdb; ipdb.set_trace()
 
 
 # Wrap solver using scipy.integrate.ode and do the timesteps manually until it blows up
 # Take the L2 norm(s) between the results and the actual data
 # Do some monte carlo for the parameters to get a good idea of what the state space is like
-
