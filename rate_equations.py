@@ -38,7 +38,16 @@ dt = 0.1
 
 # Given particular reaction rates, solve for the concentrations of each reagent over time.
 def concentrations(rates):
+    """Integrate the ODE system below, given values for the coeffients.
+
+    In more detail, d_by_dt defines a system of first-order ODEs describing a certain chemical
+    reaction. Our goal is to integrate this system over time (quitting if it looks like it'll blow
+    up) and return the vector timeseries of concentrations.
+
+    """
+
     def d_by_dt(t, y, b, c, d):
+        "Given concentrations at t, compute them at dt."
         B, C, D, E, F, G = y
         B_prime = -b * B * E
         G_prime = d * D * E
@@ -48,10 +57,9 @@ def concentrations(rates):
         E_prime = -B_prime - G_prime
         return [B_prime, C_prime, D_prime, E_prime, F_prime, G_prime]
 
+    # Set up an integrator for the system
     r = scipy.integrate.ode(d_by_dt)
-    # vode, method={adams (non-stiff), bdf (stiff)}; lsoda
     r.set_integrator('vode', method='adams')  # bdf if stiff, also try lsoda integrator
-    # r.set_integrator('lsoda')
     r.set_initial_value(initial_conditions, 0)  # y0, t0
     r.set_f_params(*rates)
 
@@ -78,14 +86,17 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description="Do some rate equation computations")
     parser.add_argument("--rates", help="comma-separated coefficients for b, c, d")
-    parser.add_argument("--datafile", help="datafile to load", default="data.csv")
+    parser.add_argumen
+
+    t("--datafile", help="datafile to load", default="data.csv")
     args = parser.parse_args()
 
     logging.info("Using experimental data from %s", args.datafile)
     real_data = pd.DataFrame.from_csv(args.datafile)
     data_indices = [varz.index(c) for c in real_data.columns]
-    
+
     def score(rates):
+        """Given `rates` as coefficients, how well does this system predict the data?"""
         approximated = concentrations(rates)
         stride = len(approximated) / len(real_data)
         subsampled = approximated[0:-1:stride][:, data_indices]
@@ -108,7 +119,19 @@ if __name__ == "__main__":
 
     logging.info("Done")
 
+# TODO(Katriel): Monte Carlo the parameters to get an idea of what the state space is like
 
-# Wrap solver using scipy.integrate.ode and do the timesteps manually until it blows up
-# Take the L2 norm(s) between the results and the actual data
-# Do some monte carlo for the parameters to get a good idea of what the state space is like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
