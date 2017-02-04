@@ -93,7 +93,8 @@ if __name__ == "__main__":
 
     logging.info("Minimising L2 distance between approximated values and real data")
     initial_rates = tuple(float(rate) for rate in args.rates.split(",")) if args.rates else (0.1, 0.2, 0.3)
-    result = scipy.optimize.minimize(score, initial_rates, method='Nelder-Mead', options=dict(disp=True))
+    # result = scipy.optimize.minimize(score, initial_rates, method='Nelder-Mead', options=dict(disp=True))
+    result = scipy.optimize.basinhopping(score, initial_rates, disp=True)
 
     logging.info("Plotting")
     rates = result.x
