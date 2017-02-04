@@ -86,9 +86,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description="Do some rate equation computations")
     parser.add_argument("--rates", help="comma-separated coefficients for b, c, d")
-    parser.add_argumen
-
-    t("--datafile", help="datafile to load", default="data.csv")
+    parser.add_argument("--datafile", help="datafile to load", default="data.csv")
     args = parser.parse_args()
 
     logging.info("Using experimental data from %s", args.datafile)
@@ -104,8 +102,8 @@ if __name__ == "__main__":
 
     logging.info("Minimising L2 distance between approximated values and real data")
     initial_rates = tuple(float(rate) for rate in args.rates.split(",")) if args.rates else (0.1, 0.2, 0.3)
-    # result = scipy.optimize.minimize(score, initial_rates, method='Nelder-Mead', options=dict(disp=True))
-    result = scipy.optimize.basinhopping(score, initial_rates, disp=True)
+    result = scipy.optimize.minimize(score, initial_rates, method='Nelder-Mead', options=dict(disp=True))
+    # result = scipy.optimize.basinhopping(score, initial_rates, disp=True)
 
     logging.info("Plotting")
     rates = result.x
